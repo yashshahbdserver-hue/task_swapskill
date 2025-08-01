@@ -54,9 +54,11 @@ class UserRegistrationForm(UserCreationForm):
         # If editing an existing profile and department is set, populate branches
         if 'department' in self.data:
             try:
-                department_id = int(self.data.get('department'))
-                self.fields['branch'].queryset = Branch.objects.filter(department_id=department_id, is_active=True)
-                self.fields['branch'].widget.attrs.pop('disabled', None)
+                department_value = self.data.get('department')
+                if department_value and department_value.strip() and department_value.isdigit():
+                    department_id = int(department_value)
+                    self.fields['branch'].queryset = Branch.objects.filter(department_id=department_id, is_active=True)
+                    self.fields['branch'].widget.attrs.pop('disabled', None)
             except (ValueError, TypeError):
                 pass
         elif self.instance and hasattr(self.instance, 'profile') and self.instance.profile.department:

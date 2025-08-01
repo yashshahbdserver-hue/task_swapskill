@@ -299,11 +299,11 @@
                             <div>
                                 <h3 class="font-semibold text-gray-800">{{ session.skill.name }}</h3>
                                 <p class="text-sm text-gray-600">
-                                    {% if session.teacher == user %}
-                                        Teaching {{ session.learner.get_full_name|default:session.learner.username }}
-                                    {% else %}
-                                        Learning from {{ session.teacher.get_full_name|default:session.teacher.username }}
-                                    {% endif %}
+                                                                    {% if session.teacher == user %}
+                                    Sharing with {{ session.learner.get_full_name|default:session.learner.username }}
+                                {% else %}
+                                    Learning from {{ session.teacher.get_full_name|default:session.teacher.username }}
+                                {% endif %}
                                 </p>
                             </div>
                         </div>
