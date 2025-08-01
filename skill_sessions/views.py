@@ -74,10 +74,31 @@ class RequestResponseView(LoginRequiredMixin, UpdateView):
     model = SkillSwapRequest
     form_class = RequestResponseForm
     template_name = 'skill_sessions/request_response.html'
-    success_url = reverse_lazy('skill_sessions:received_requests')
+    success_url = reverse_lazy('skill_sessions:session_list')
     
     def get_queryset(self):
         return SkillSwapRequest.objects.filter(recipient=self.request.user)
+    
+    def post(self, request, *args, **kwargs):
+        # Handle simple approve/decline actions
+        if 'action' in request.POST:
+            request_obj = self.get_object()
+            action = request.POST.get('action')
+            
+            if action == 'accept':
+                request_obj.status = 'accepted'
+                request_obj.responded_at = timezone.now()
+                request_obj.save()
+                messages.success(request, f'Session request from {request_obj.requester.username} has been approved!')
+            elif action == 'decline':
+                request_obj.status = 'declined'
+                request_obj.responded_at = timezone.now()
+                request_obj.save()
+                messages.success(request, f'Session request from {request_obj.requester.username} has been declined.')
+            
+            return redirect(self.success_url)
+        
+        return super().post(request, *args, **kwargs)
 
 
 @login_required
@@ -99,6 +120,30 @@ class SessionListView(LoginRequiredMixin, ListView):
         ) | SkillSwapSession.objects.filter(
             learner=self.request.user
         )
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Get all sessions for the user
+        all_sessions = SkillSwapSession.objects.filter(
+            teacher=user
+        ) | SkillSwapSession.objects.filter(
+            learner=user
+        )
+        
+        # Categorize sessions
+        context['upcoming_sessions'] = all_sessions.filter(status='scheduled').order_by('scheduled_date')
+        context['ongoing_sessions'] = all_sessions.filter(status='in_progress').order_by('scheduled_date')
+        context['completed_sessions'] = all_sessions.filter(status='completed').order_by('-ended_at')
+        
+        # Get pending requests that need approval (requests sent to this user)
+        context['pending_requests'] = SkillSwapRequest.objects.filter(
+            recipient=user,
+            status='pending'
+        ).select_related('requester', 'offered_skill__skill').order_by('-created_at')
+        
+        return context
 
 
 class UpcomingSessionListView(LoginRequiredMixin, ListView):

@@ -59,11 +59,19 @@ class ProfileView(LoginRequiredMixin, DetailView):
     context_object_name = 'profile'
     
     def get_object(self):
+        # If user_id is provided in URL, show that user's profile
+        if 'user_id' in self.kwargs:
+            User = get_user_model()
+            user = get_object_or_404(User, id=self.kwargs['user_id'])
+            return user.profile
+        # Otherwise show current user's profile
         return self.request.user.profile
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['completion_percentage'] = self.get_object().get_completion_percentage()
+        profile = self.get_object()
+        context['completion_percentage'] = profile.get_completion_percentage()
+        context['is_own_profile'] = profile.user == self.request.user
         return context
 
 

@@ -12,6 +12,7 @@ urlpatterns = [
     
     # Profile management
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('profile/<int:user_id>/', views.ProfileView.as_view(), name='profile_view'),
     path('profile/edit/', views.ProfileEditView.as_view(), name='profile_edit'),
     path('profile/complete/', views.ProfileCompleteView.as_view(), name='profile_complete'),
     
