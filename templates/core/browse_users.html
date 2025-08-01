@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Browse Students - Campus Skill-Swap{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="gradient-bg relative overflow-hidden">
+    <div class="absolute inset-0 bg-black opacity-20"></div>
+    <div class="relative container mx-auto px-4 py-20 lg:py-32">
+        <div class="text-center text-white">
+            <h1 class="text-4xl lg:text-6xl font-bold mb-6 leading-tight">
+                Connect with <span class="text-yellow-300">Students</span>
+            </h1>
+            <p class="text-lg lg:text-xl mb-8 max-w-3xl mx-auto">
+                Discover talented students from your campus. Find the perfect learning partner or someone to share your skills with. 
+                Start building meaningful connections today.
+            </p>
+            
+            <!-- Search and Filter Section -->
+            <div class="max-w-4xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
+                <form method="get" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Search Input -->
+                        <div class="relative">
+                            <input type="text" 
+                                   name="search" 
+                                   value="{{ request.GET.search }}"
+                                   placeholder="Search students..." 
+                                   class="w-full px-4 py-3 rounded-lg border-0 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        
+                        <!-- Department Filter -->
+                        <div class="relative">
+                            <select name="department" class="w-full px-4 py-3 rounded-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500 appearance-none">
+                                <option value="">All Departments</option>
+                                {% for dept in departments %}
+                                    <option value="{{ dept }}" {% if request.GET.department == dept %}selected{% endif %}>
+                                        {{ dept }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                        
+                        <!-- Year Filter -->
+                        <div class="relative">
+                            <select name="year" class="w-full px-4 py-3 rounded-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500 appearance-none">
+                                <option value="">All Years</option>
+                                {% for year_choice in year_choices %}
+                                    <option value="{{ year_choice.0 }}" {% if request.GET.year == year_choice.0 %}selected{% endif %}>
+                                        {{ year_choice.1 }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                        
+                        <!-- Sort Options -->
+                        <div class="relative">
+                            <select name="sort" class="w-full px-4 py-3 rounded-lg border-0 text-gray-800 focus:ring-2 focus:ring-blue-500 appearance-none">
+                                <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Sort by Name</option>
+                                <option value="recent" {% if request.GET.sort == 'recent' %}selected{% endif %}>Recently Active</option>
+                                <option value="rating" {% if request.GET.sort == 'rating' %}selected{% endif %}>Highest Rated</option>
+                                <option value="sessions" {% if request.GET.sort == 'sessions' %}selected{% endif %}>Most Sessions</option>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button type="submit" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all">
+                            <i class="fas fa-search mr-2"></i>Search Students
+                        </button>
+                        <a href="{% url 'core:browse_users' %}" class="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all text-center">
+                            <i class="fas fa-times mr-2"></i>Clear Filters
+                        </a>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <div class="text-center">
+                    <div class="text-3xl font-bold">{{ users.count|default:"0" }}</div>
+                    <div class="text-blue-200">Active Students</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold">{{ departments.count|default:"0" }}</div>
+                    <div class="text-blue-200">Departments</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold">{{ total_skills|default:"0" }}</div>
+                    <div class="text-blue-200">Skills Offered</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold">{{ total_sessions|default:"0" }}</div>
+                    <div class="text-blue-200">Sessions Completed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating elements for visual appeal -->
+    <div class="absolute top-20 left-10 w-20 h-20 bg-white opacity-10 rounded-full animate-bounce"></div>
+    <div class="absolute bottom-20 right-10 w-16 h-16 bg-yellow-300 opacity-20 rounded-full animate-pulse"></div>
+    <div class="absolute top-1/2 right-20 w-12 h-12 bg-green-400 opacity-15 rounded-full animate-bounce delay-75"></div>
+</section>
+
+<!-- Users Grid Section -->
+<section class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+        <!-- Results Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+            <div>
+                <h2 class="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">
+                    {% if request.GET.search %}
+                        Search Results for "{{ request.GET.search }}"
+                    {% elif request.GET.department or request.GET.year %}
+                        Students matching your criteria
+                    {% else %}
+                        All Students
+                    {% endif %}
+                </h2>
+                <p class="text-gray-600">
+                    Showing {{ users.count }} student{{ users.count|pluralize }} 
+                    {% if request.GET.search or request.GET.department or request.GET.year %}
+                        matching your criteria
+                    {% endif %}
+                </p>
+            </div>
+            
+            {% if user.is_authenticated %}
+                <a href="{% url 'accounts:profile' %}" class="btn-primary-custom px-6 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all">
+                    <i class="fas fa-user-edit mr-2"></i>Update My Profile
+                </a>
+            {% endif %}
+        </div>
+        
+        <!-- Users Grid -->
+        {% if users %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for user_profile in users %}
+                    <div class="user-card bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                        <!-- User Header -->
+                        <div class="flex items-center mb-4">
+                            {% if user_profile.profile_picture %}
+                                <img src="{{ user_profile.profile_picture.url }}" alt="{{ user_profile.user.get_full_name }}" 
+                                     class="w-16 h-16 rounded-full object-cover border-2 border-gray-200">
+                            {% else %}
+                                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xl font-bold">
+                                        {{ user_profile.user.first_name|first|upper }}{{ user_profile.user.last_name|first|upper }}
+                                    </span>
+                                </div>
+                            {% endif %}
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-lg font-bold text-gray-800">{{ user_profile.user.get_full_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ user_profile.department|default:"Department not specified" }}</p>
+                                <p class="text-xs text-gray-400">{{ user_profile.get_year_display|default:"Year not specified" }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- User Stats -->
+                        <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                            <div class="bg-blue-50 rounded-lg p-2">
+                                <div class="text-lg font-bold text-blue-600">{{ user_profile.total_sessions_taught }}</div>
+                                <div class="text-xs text-gray-600">Taught</div>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-2">
+                                <div class="text-lg font-bold text-green-600">{{ user_profile.total_sessions_learned }}</div>
+                                <div class="text-xs text-gray-600">Learned</div>
+                            </div>
+                            <div class="bg-yellow-50 rounded-lg p-2">
+                                <div class="text-lg font-bold text-yellow-600">{{ user_profile.average_rating_as_teacher|default:"0.0" }}</div>
+                                <div class="text-xs text-gray-600">Rating</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Skills Preview -->
+                        <div class="mb-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Skills Offered:</h4>
+                            <div class="flex flex-wrap gap-1">
+                                {% for offered_skill in user_profile.offered_skills.all|slice:":3" %}
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                        {{ offered_skill.skill.name }}
+                                    </span>
+                                {% empty %}
+                                    <span class="text-gray-400 text-xs">No skills listed yet</span>
+                                {% endfor %}
+                                {% if user_profile.offered_skills.count > 3 %}
+                                    <span class="text-gray-500 text-xs">+{{ user_profile.offered_skills.count|add:"-3" }} more</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Bio Preview -->
+                        {% if user_profile.bio %}
+                            <p class="text-gray-600 text-sm mb-4">{{ user_profile.bio|truncatewords:15 }}</p>
+                        {% endif %}
+                        
+                        <!-- Action Buttons -->
+                        <div class="space-y-2">
+                            <a href="{% url 'accounts:profile' user_profile.user.username %}" 
+                               class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-center block hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-eye mr-2"></i>View Profile
+                            </a>
+                            
+                            {% if user.is_authenticated and user != user_profile.user %}
+                                <button onclick="requestSession('{{ user_profile.user.id }}', '{{ user_profile.user.get_full_name }}')" 
+                                        class="w-full border border-blue-600 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors">
+                                    <i class="fas fa-handshake mr-2"></i>Request Session
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if users.has_other_pages %}
+                <div class="flex justify-center mt-12">
+                    <nav class="flex items-center space-x-2">
+                        {% if users.has_previous %}
+                            <a href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" 
+                               class="px-4 py-2 text-gray-500 hover:text-blue-600 transition-colors">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
+                        
+                        {% for num in users.paginator.page_range %}
+                            {% if users.number == num %}
+                                <span class="px-4 py-2 bg-blue-600 text-white rounded-lg">{{ num }}</span>
+                            {% elif num > users.number|add:'-3' and num < users.number|add:'3' %}
+                                <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" 
+                                   class="px-4 py-2 text-gray-600 hover:text-blue-600 transition-colors">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if users.has_next %}
+                            <a href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" 
+                               class="px-4 py-2 text-gray-500 hover:text-blue-600 transition-colors">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            {% endif %}
+            
+        {% else %}
+            <!-- No Results -->
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-users text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">No Students Found</h3>
+                <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                    {% if request.GET.search %}
+                        We couldn't find any students matching "{{ request.GET.search }}". Try adjusting your search terms.
+                    {% elif request.GET.department or request.GET.year %}
+                        No students match your current filters. Try broadening your search criteria.
+                    {% else %}
+                        No students are registered yet. Be the first to join the platform!
+                    {% endif %}
+                </p>
+                
+                <div class="space-y-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'accounts:profile' %}" class="btn-primary-custom px-6 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all inline-block">
+                            <i class="fas fa-user-edit mr-2"></i>Update My Profile
+                        </a>
+                    {% else %}
+                        <a href="{% url 'accounts:register' %}" class="btn-primary-custom px-6 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all inline-block">
+                            <i class="fas fa-user-plus mr-2"></i>Join the Community
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'core:browse_users' %}" class="border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition-all inline-block">
+                        <i class="fas fa-times mr-2"></i>Clear All Filters
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Departments Section -->
+<section class="py-16 bg-gray-50">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl lg:text-4xl font-bold text-gray-800 mb-4">
+                Browse by Department
+            </h2>
+            <p class="text-lg text-gray-600">
+                Find students from specific departments to connect with
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {% for dept in departments %}
+                <a href="?department={{ dept }}" class="dept-card bg-white p-6 rounded-xl text-center hover:shadow-lg transition-all transform hover:-translate-y-1">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-graduation-cap text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">{{ dept }}</h3>
+                    <p class="text-sm text-gray-500">{{ dept.student_count }} students</p>
+                </a>
+            {% empty %}
+                <!-- Fallback departments -->
+                <div class="dept-card bg-white p-6 rounded-xl text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-laptop-code text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Computer Science</h3>
+                    <p class="text-sm text-gray-500">25+ students</p>
+                </div>
+                <div class="dept-card bg-white p-6 rounded-xl text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Business</h3>
+                    <p class="text-sm text-gray-500">30+ students</p>
+                </div>
+                <div class="dept-card bg-white p-6 rounded-xl text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-palette text-purple-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Arts & Design</h3>
+                    <p class="text-sm text-gray-500">20+ students</p>
+                </div>
+                <div class="dept-card bg-white p-6 rounded-xl text-center">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-calculator text-yellow-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Mathematics</h3>
+                    <p class="text-sm text-gray-500">18+ students</p>
+                </div>
+                <div class="dept-card bg-white p-6 rounded-xl text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-flask text-red-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Science</h3>
+                    <p class="text-sm text-gray-500">22+ students</p>
+                </div>
+                <div class="dept-card bg-white p-6 rounded-xl text-center">
+                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-language text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Languages</h3>
+                    <p class="text-sm text-gray-500">15+ students</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="gradient-bg py-16">
+    <div class="container mx-auto px-4 text-center">
+        <div class="max-w-3xl mx-auto text-white">
+            <h2 class="text-3xl lg:text-4xl font-bold mb-6">
+                Ready to Connect?
+            </h2>
+            <p class="text-lg mb-8">
+                Join the community of learners and teachers. Update your profile and start connecting with fellow students today.
+            </p>
+            
+            {% if user.is_authenticated %}
+                <a href="{% url 'accounts:profile' %}" 
+                   class="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg inline-block">
+                    <i class="fas fa-user-edit mr-2"></i>Update My Profile
+                </a>
+            {% else %}
+                <a href="{% url 'accounts:register' %}" 
+                   class="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg inline-block">
+                    <i class="fas fa-user-plus mr-2"></i>Join the Community
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+    
+    // Animation on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-fade-in');
+            }
+        });
+    }, observerOptions);
+    
+    // Observe user cards and department cards
+    document.querySelectorAll('.user-card, .dept-card').forEach(card => {
+        observer.observe(card);
+    });
+    
+    // Request session function
+    function requestSession(userId, userName) {
+        if (confirm(`Would you like to request a session with ${userName}?`)) {
+            // You can implement AJAX call here to send the request
+            // For now, we'll show a simple alert
+            alert('Session request sent! The student will be notified of your interest.');
+        }
+    }
+    
+    // Auto-submit form when filters change
+    document.querySelectorAll('select[name="department"], select[name="year"], select[name="sort"]').forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+</script>
+
+<style>
+    .animate-fade-in {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .user-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .dept-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+</style>
+{% endblock %} 
