@@ -34,9 +34,9 @@
                        class="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
                         <i class="fas fa-tachometer-alt mr-2"></i>Go to Dashboard
                     </a>
-                    <a href="{% url 'core:browse_users' %}" 
+                    <a href="{% url 'core:requests' %}" 
                        class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-blue-600 transition-all">
-                        <i class="fas fa-users mr-2"></i>Browse Skills
+                        <i class="fas fa-exchange-alt mr-2"></i>View Requests
                     </a>
                 </div>
             {% endif %}
@@ -440,8 +440,8 @@
                         </div>
                     </div>
                     
-                    <a href="{% url 'core:browse_users' %}" class="btn-primary-custom px-8 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all inline-block">
-                        <i class="fas fa-users mr-2"></i>Browse Students
+                    <a href="{% url 'core:requests' %}" class="btn-primary-custom px-8 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all inline-block">
+                        <i class="fas fa-exchange-alt mr-2"></i>View Requests
                     </a>
                 </div>
             </div>
