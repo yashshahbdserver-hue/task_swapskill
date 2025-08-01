@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.db import models
 
 from .models import SkillSwapRequest, SkillSwapSession, SessionReview
 from .forms import SkillSwapRequestForm, RequestResponseForm, SessionScheduleForm, SessionReviewForm
@@ -299,3 +300,110 @@ class ScheduleSessionView(LoginRequiredMixin, CreateView):
         form.instance.learner = request_obj.requester
         form.instance.skill = request_obj.offered_skill.skill
         return super().form_valid(form)
+
+
+class SessionManagementView(LoginRequiredMixin, ListView):
+    model = SkillSwapSession
+    template_name = 'skill_sessions/session_management.html'
+    context_object_name = 'sessions'
+    
+    def get_queryset(self):
+        # Get all sessions where user is involved (either as teacher or learner)
+        return SkillSwapSession.objects.filter(
+            models.Q(teacher=self.request.user) | models.Q(learner=self.request.user)
+        ).select_related('skill', 'teacher', 'learner', 'request')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Get all sessions where user is involved
+        all_sessions = SkillSwapSession.objects.filter(
+            models.Q(teacher=user) | models.Q(learner=user)
+        ).select_related('skill', 'teacher', 'learner', 'request')
+        
+        # Categorize sessions
+        completed_sessions = all_sessions.filter(status='completed')
+        ongoing_sessions = all_sessions.filter(status='in_progress')
+        upcoming_sessions = all_sessions.filter(status='scheduled', scheduled_date__gt=timezone.now())
+        
+        # Get pending approval sessions (requests that haven't been responded to)
+        pending_requests = SkillSwapRequest.objects.filter(
+            recipient=user,
+            status='pending'
+        ).select_related('requester', 'offered_skill')
+        
+        # Convert pending requests to session-like objects for display
+        pending_sessions = []
+        for request in pending_requests:
+            # Create a mock session object for display purposes
+            mock_session = type('MockSession', (), {
+                'id': request.id,
+                'skill': request.offered_skill.skill,
+                'learner': request.requester,
+                'scheduled_date': timezone.now(),  # Placeholder
+                'duration_minutes': request.proposed_duration,
+                'request': request,
+                'status': 'pending_approval'
+            })()
+            pending_sessions.append(mock_session)
+        
+        context.update({
+            'completed_sessions': completed_sessions,
+            'ongoing_sessions': ongoing_sessions,
+            'upcoming_sessions': upcoming_sessions,
+            'pending_sessions': pending_sessions,
+            'completed_count': completed_sessions.count(),
+            'ongoing_count': ongoing_sessions.count(),
+            'upcoming_count': upcoming_sessions.count(),
+            'pending_count': len(pending_sessions),
+        })
+        
+        return context
+
+
+@login_required
+def approve_session(request, session_id):
+    """Approve a session request"""
+    if request.method == 'POST':
+        # Get the request object (not session, since it's pending)
+        swap_request = get_object_or_404(SkillSwapRequest, id=session_id, recipient=request.user, status='pending')
+        
+        # Update request status
+        swap_request.status = 'accepted'
+        swap_request.responded_at = timezone.now()
+        swap_request.save()
+        
+        # Create a session
+        session = SkillSwapSession.objects.create(
+            request=swap_request,
+            teacher=swap_request.recipient,  # The person who approved is the teacher
+            learner=swap_request.requester,
+            skill=swap_request.offered_skill.skill,
+            scheduled_date=timezone.now() + timezone.timedelta(days=1),  # Default to tomorrow
+            duration_minutes=swap_request.proposed_duration,
+            format=swap_request.proposed_format,
+            location=swap_request.proposed_location,
+            status='scheduled'
+        )
+        
+        messages.success(request, f'Session approved! You can now schedule the details with {swap_request.requester.username}.')
+    
+    return redirect('skill_sessions:session_management')
+
+
+@login_required  
+def reject_session(request, session_id):
+    """Reject a session request"""
+    if request.method == 'POST':
+        # Get the request object (not session, since it's pending)
+        swap_request = get_object_or_404(SkillSwapRequest, id=session_id, recipient=request.user, status='pending')
+        
+        # Update request status
+        swap_request.status = 'declined'
+        swap_request.responded_at = timezone.now()
+        swap_request.save()
+        
+        messages.info(request, f'Session request from {swap_request.requester.username} has been rejected.')
+    
+    return redirect('skill_sessions:session_management')

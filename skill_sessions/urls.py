@@ -15,6 +15,9 @@ urlpatterns = [
     
     # Session management
     path('', views.SessionListView.as_view(), name='session_list'),
+    path('manage/', views.SessionManagementView.as_view(), name='session_management'),
+    path('approve/<int:session_id>/', views.approve_session, name='approve_session'),
+    path('reject/<int:session_id>/', views.reject_session, name='reject_session'),
     path('upcoming/', views.UpcomingSessionListView.as_view(), name='upcoming_sessions'),
     path('history/', views.SessionHistoryView.as_view(), name='session_history'),
     path('<int:pk>/', views.SessionDetailView.as_view(), name='session_detail'),

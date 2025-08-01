@@ -13,7 +13,7 @@
                 My <span class="text-yellow-300">Sessions</span>
             </h1>
             <p class="text-lg lg:text-xl mb-8 max-w-3xl mx-auto">
-                Manage your learning and teaching sessions. View upcoming sessions, track your progress, and approve or decline session requests.
+                Manage your learning sessions. View upcoming sessions, track your progress, and approve or decline session requests.
             </p>
         </div>
     </div>
@@ -161,7 +161,7 @@
                                     <div class="flex-1">
                                         <div class="flex items-center space-x-4 mb-3">
                                             {% if session.teacher == user %}
-                                                <span class="text-gray-600">Teaching</span>
+                                                <span class="text-gray-600">Sharing</span>
                                                 <a href="{% url 'accounts:profile_view' session.learner.id %}" class="flex items-center space-x-3 hover:bg-white rounded-lg p-2 transition-colors">
                                                     {% if session.learner.profile.profile_picture %}
                                                         <img src="{{ session.learner.profile.profile_picture.url }}" alt="Profile" class="w-10 h-10 rounded-full">
@@ -253,7 +253,7 @@
                                                 <span class="text-green-600 font-medium">LIVE</span>
                                             </div>
                                             {% if session.teacher == user %}
-                                                <span class="text-gray-600">Teaching</span>
+                                                <span class="text-gray-600">Sharing</span>
                                                 <a href="{% url 'accounts:profile_view' session.learner.id %}" class="flex items-center space-x-3 hover:bg-white rounded-lg p-2 transition-colors">
                                                     {% if session.learner.profile.profile_picture %}
                                                         <img src="{{ session.learner.profile.profile_picture.url }}" alt="Profile" class="w-10 h-10 rounded-full">
