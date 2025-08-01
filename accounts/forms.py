@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from .models import UserProfile
+from core.models import Department, Branch
 
 class UserRegistrationForm(UserCreationForm):
     """Custom registration form with additional fields"""
@@ -11,7 +12,27 @@ class UserRegistrationForm(UserCreationForm):
     university_email = forms.EmailField(required=True, help_text="Required. Enter your university email address.")
     first_name = forms.CharField(max_length=30, required=True, help_text="Required.")
     last_name = forms.CharField(max_length=30, required=True, help_text="Required.")
-    department = forms.CharField(max_length=100, required=False, help_text="Optional. Your department or major.")
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.filter(is_active=True),
+        required=False,
+        empty_label="Select Department",
+        help_text="Optional. Your department or major.",
+        widget=forms.Select(attrs={
+            'class': 'form-control text-lg py-3 px-4 h-14 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 w-full bg-white',
+            'id': 'id_department'
+        })
+    )
+    branch = forms.ModelChoiceField(
+        queryset=Branch.objects.none(),  # Initially empty, will be populated via AJAX
+        required=False,
+        empty_label="Select Branch",
+        help_text="Optional. Your specialization/branch.",
+        widget=forms.Select(attrs={
+            'class': 'form-control text-lg py-3 px-4 h-14 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 w-full bg-white',
+            'id': 'id_branch',
+            'disabled': True  # Initially disabled until department is selected
+        })
+    )
     year = forms.ChoiceField(choices=UserProfile.YEAR_CHOICES, required=False, help_text="Optional. Your current year of study.")
     bio = forms.CharField(
         max_length=500, required=False,
@@ -26,7 +47,21 @@ class UserRegistrationForm(UserCreationForm):
     
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'university_email', 'department', 'year', 'bio', 'availability', 'password1', 'password2')
+        fields = ('username', 'first_name', 'last_name', 'email', 'university_email', 'department', 'branch', 'year', 'bio', 'availability', 'password1', 'password2')
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # If editing an existing profile and department is set, populate branches
+        if 'department' in self.data:
+            try:
+                department_id = int(self.data.get('department'))
+                self.fields['branch'].queryset = Branch.objects.filter(department_id=department_id, is_active=True)
+                self.fields['branch'].widget.attrs.pop('disabled', None)
+            except (ValueError, TypeError):
+                pass
+        elif self.instance and hasattr(self.instance, 'profile') and self.instance.profile.department:
+            self.fields['branch'].queryset = self.instance.profile.department.branches.filter(is_active=True)
+            self.fields['branch'].widget.attrs.pop('disabled', None)
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -48,6 +83,17 @@ class UserRegistrationForm(UserCreationForm):
         
         return university_email
     
+    def clean(self):
+        cleaned_data = super().clean()
+        department = cleaned_data.get('department')
+        branch = cleaned_data.get('branch')
+        
+        # Validate branch belongs to department
+        if branch and department and branch.department != department:
+            raise ValidationError('Selected branch does not belong to the selected department.')
+        
+        return cleaned_data
+    
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
@@ -59,10 +105,29 @@ class UserRegistrationForm(UserCreationForm):
 class UserProfileForm(forms.ModelForm):
     """Form for editing user profile"""
     
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.filter(is_active=True),
+        required=False,
+        empty_label="Select Department",
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_department'
+        })
+    )
+    branch = forms.ModelChoiceField(
+        queryset=Branch.objects.none(),
+        required=False,
+        empty_label="Select Branch",
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_branch'
+        })
+    )
+    
     class Meta:
         model = UserProfile
         fields = [
-            'university_email', 'department', 'year', 'bio', 
+            'university_email', 'department', 'branch', 'year', 'bio', 
             'availability', 'profile_picture', 'prefer_in_person', 
             'prefer_online', 'notification_email', 'notification_in_app'
         ]
@@ -71,6 +136,12 @@ class UserProfileForm(forms.ModelForm):
             'availability': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Describe your general availability...'}),
             'university_email': forms.EmailInput(attrs={'placeholder': 'your.email@university.edu'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # If instance has department, populate branches
+        if self.instance and self.instance.department:
+            self.fields['branch'].queryset = self.instance.department.branches.filter(is_active=True)
     
     def clean_university_email(self):
         email = self.cleaned_data.get('university_email')
@@ -86,6 +157,17 @@ class UserProfileForm(forms.ModelForm):
                 raise ValidationError('This university email is already registered.')
         
         return email
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        department = cleaned_data.get('department')
+        branch = cleaned_data.get('branch')
+        
+        # Validate branch belongs to department
+        if branch and department and branch.department != department:
+            raise ValidationError('Selected branch does not belong to the selected department.')
+        
+        return cleaned_data
 
 
 class EmailVerificationForm(forms.Form):

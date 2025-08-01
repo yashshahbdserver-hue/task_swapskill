@@ -8,8 +8,8 @@
     <div class="absolute inset-0 bg-black opacity-20"></div>
     <div class="relative container mx-auto px-4 py-16 lg:py-24">
         <div class="text-center text-white">
-            <h1 class="text-4xl lg:text-5xl font-bold mb-4">My Skills</h1>
-            <p class="text-lg lg:text-xl mb-6">Here are the skills you can teach and the skills you want to learn. Manage your offerings and learning goals below!</p>
+            <h1 class="text-4xl lg:text-5xl font-bold mb-4">Skills I Can Teach</h1>
+            <p class="text-lg lg:text-xl mb-6">Manage and showcase the skills you can teach to other students. Share your knowledge and help others learn!</p>
         </div>
     </div>
     <div class="absolute top-20 left-10 w-20 h-20 bg-white opacity-10 rounded-full animate-bounce"></div>
@@ -19,85 +19,70 @@
 
 <section class="py-12 bg-white">
     <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <!-- Offered Skills -->
-            <div>
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Skills I Can Teach</h2>
-                    <a href="{% url 'skills:add_skill' %}" class="btn-primary-custom px-6 py-2 text-white rounded-lg font-semibold hover:shadow-lg transition-all">
-                        <i class="fas fa-plus mr-2"></i>Add Skill
-                    </a>
-                </div>
-                {% if offered_skills %}
-                    <div class="space-y-6">
-                        {% for offered in offered_skills %}
-                        <div class="bg-blue-50 rounded-xl p-6 flex flex-col md:flex-row md:items-center md:justify-between shadow hover:shadow-lg transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="w-14 h-14 rounded-full flex items-center justify-center bg-white border border-blue-200">
-                                    <i class="fas fa-chalkboard-teacher text-blue-600 text-2xl"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-bold text-gray-800">{{ offered.skill.name }}</h3>
-                                    <p class="text-sm text-gray-600">Proficiency: <span class="font-semibold">{{ offered.get_proficiency_level_display }}</span></p>
-                                    <p class="text-xs text-gray-500">{{ offered.description|truncatewords:15 }}</p>
-                                    <p class="text-xs text-gray-400 mt-1">Teaching: {{ offered.get_teaching_preference_display }} | Experience: {{ offered.years_of_experience }} yrs</p>
-                                </div>
+        <!-- Offered Skills - Full Width -->
+        <div class="max-w-6xl mx-auto">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-3xl font-bold text-gray-800">My Teaching Skills</h2>
+                <a href="{% url 'skills:add_skill' %}" class="btn-primary-custom px-8 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all">
+                    <i class="fas fa-plus mr-2"></i>Add New Skill
+                </a>
+            </div>
+            {% if offered_skills %}
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {% for offered in offered_skills %}
+                    <div class="bg-blue-50 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                        <div class="flex items-start gap-6">
+                            <div class="w-16 h-16 rounded-full flex items-center justify-center bg-white border-2 border-blue-200 shadow-sm">
+                                <i class="fas fa-chalkboard-teacher text-blue-600 text-2xl"></i>
                             </div>
-                            <div class="mt-4 md:mt-0 flex flex-col gap-2 items-end">
-                                <a href="{% url 'skills:offered_edit' offered.pk %}" class="text-blue-600 hover:underline text-sm"><i class="fas fa-edit mr-1"></i>Edit</a>
-                                <a href="{% url 'skills:offered_delete' offered.pk %}" class="text-red-600 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</a>
-                                <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mt-2">{{ offered.total_sessions }} sessions | {{ offered.average_rating|floatformat:1 }}/5</span>
+                            <div class="flex-1">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-2">{{ offered.skill.name }}</h3>
+                                <p class="text-sm text-gray-600 mb-2">Proficiency: <span class="font-semibold text-blue-600">{{ offered.get_proficiency_level_display }}</span></p>
+                                <p class="text-gray-700 mb-3">{{ offered.description|truncatewords:20 }}</p>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">{{ offered.get_teaching_preference_display }}</span>
+                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">{{ offered.years_of_experience }} years experience</span>
+                                    <span class="inline-block bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full">{{ offered.total_sessions }} sessions | {{ offered.average_rating|floatformat:1 }}/5 ⭐</span>
+                                </div>
+                                <div class="flex gap-3">
+                                    <a href="{% url 'skills:offered_edit' offered.pk %}" class="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center">
+                                        <i class="fas fa-edit mr-1"></i>Edit
+                                    </a>
+                                    <a href="{% url 'skills:offered_delete' offered.pk %}" class="text-red-600 hover:text-red-800 font-medium text-sm flex items-center">
+                                        <i class="fas fa-trash mr-1"></i>Delete
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                {% else %}
-                    <div class="bg-gray-50 rounded-xl p-6 text-center text-gray-500">You haven't added any skills to teach yet.</div>
-                {% endif %}
-            </div>
-            <!-- Desired Skills -->
-            <div>
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Skills I Want to Learn</h2>
-                    <a href="{% url 'skills:desired_add' %}" class="btn-primary-custom px-6 py-2 text-white rounded-lg font-semibold hover:shadow-lg transition-all">
-                        <i class="fas fa-plus mr-2"></i>Add Learning Goal
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="bg-gray-50 rounded-xl p-12 text-center">
+                    <div class="w-24 h-24 mx-auto mb-6 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-chalkboard-teacher text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No Skills Added Yet</h3>
+                    <p class="text-gray-500 mb-6">Start sharing your knowledge by adding skills you can teach to other students.</p>
+                    <a href="{% url 'skills:add_skill' %}" class="btn-primary-custom px-8 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all inline-block">
+                        <i class="fas fa-plus mr-2"></i>Add Your First Skill
                     </a>
                 </div>
-                {% if desired_skills %}
-                    <div class="space-y-6">
-                        {% for desired in desired_skills %}
-                        <div class="bg-green-50 rounded-xl p-6 flex flex-col md:flex-row md:items-center md:justify-between shadow hover:shadow-lg transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="w-14 h-14 rounded-full flex items-center justify-center bg-white border border-green-200">
-                                    <i class="fas fa-book-reader text-green-600 text-2xl"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-bold text-gray-800">{{ desired.skill.name }}</h3>
-                                    <p class="text-sm text-gray-600">Urgency: <span class="font-semibold">{{ desired.get_urgency_display }}</span></p>
-                                    <p class="text-xs text-gray-500">{{ desired.description|truncatewords:15 }}</p>
-                                    <p class="text-xs text-gray-400 mt-1">Current: {{ desired.get_current_level_display }} | Target: {{ desired.get_target_level_display }}</p>
-                                </div>
-                            </div>
-                            <div class="mt-4 md:mt-0 flex flex-col gap-2 items-end">
-                                <a href="{% url 'skills:desired_edit' desired.pk %}" class="text-blue-600 hover:underline text-sm"><i class="fas fa-edit mr-1"></i>Edit</a>
-                                <a href="{% url 'skills:desired_delete' desired.pk %}" class="text-red-600 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</a>
-                                <span class="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full mt-2">{{ desired.learning_preference|capfirst }}</span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="bg-gray-50 rounded-xl p-6 text-center text-gray-500">You haven't added any learning goals yet.</div>
-                {% endif %}
-            </div>
+            {% endif %}
         </div>
+        
         <!-- Engagement Section -->
-        <div class="mt-16 text-center">
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">Keep Growing!</h3>
-            <p class="text-gray-600 mb-4">The more skills you offer and learn, the more you grow. Update your skills regularly to get the best matches!</p>
-            <a href="{% url 'skills:skill_list' %}" class="btn-primary-custom px-8 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all inline-block">
-                <i class="fas fa-search mr-2"></i>Browse All Skills
-            </a>
+        <div class="mt-20 text-center max-w-4xl mx-auto">
+            <h3 class="text-3xl font-bold text-gray-800 mb-4">Share Your Knowledge, Make an Impact!</h3>
+            <p class="text-lg text-gray-600 mb-8">Teaching others is one of the best ways to reinforce your own learning. The more skills you offer, the more you can help your fellow students succeed!</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'skills:skill_list' %}" class="btn-primary-custom px-8 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all inline-block">
+                    <i class="fas fa-search mr-2"></i>Browse All Skills
+                </a>
+                <a href="{% url 'skills:add_skill' %}" class="bg-white border-2 border-blue-500 text-blue-500 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-all inline-block">
+                    <i class="fas fa-plus mr-2"></i>Add Another Skill
+                </a>
+            </div>
         </div>
     </div>
 </section>
