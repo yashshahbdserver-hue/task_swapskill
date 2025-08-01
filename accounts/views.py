@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.views.generic import CreateView, UpdateView, DetailView, TemplateView
 from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -13,6 +13,8 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.utils.crypto import get_random_string
 from django.conf import settings
 from django.views import View
+from django.views.decorators.http import require_http_methods
+from core.models import Department, Branch
 
 from .models import UserProfile, Notification
 from .forms import UserProfileForm, ForgotPasswordForm, OTPVerificationForm, PasswordResetForm
@@ -30,9 +32,10 @@ class RegisterView(CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        # Create user profile with university_email, department, year, bio, and availability
+        # Create user profile with university_email, department, branch, year, bio, and availability
         university_email = form.cleaned_data.get('university_email')
         department = form.cleaned_data.get('department')
+        branch = form.cleaned_data.get('branch')
         year = form.cleaned_data.get('year')
         bio = form.cleaned_data.get('bio')
         availability = form.cleaned_data.get('availability')
@@ -40,6 +43,7 @@ class RegisterView(CreateView):
             user=form.instance,
             university_email=university_email,
             department=department,
+            branch=branch,
             year=year,
             bio=bio,
             availability=availability
@@ -202,3 +206,20 @@ class PasswordResetView(View):
                 messages.error(request, 'User not found.')
                 return redirect('accounts:forgot_password')
         return render(request, self.template_name, {'form': form})
+
+
+@require_http_methods(["GET"])
+def get_branches(request):
+    """AJAX endpoint to get branches for a selected department"""
+    department_id = request.GET.get('department_id')
+    
+    if not department_id:
+        return JsonResponse({'branches': []})
+    
+    try:
+        department = Department.objects.get(id=department_id, is_active=True)
+        branches = department.branches.filter(is_active=True).values('id', 'name')
+        branches_list = list(branches)
+        return JsonResponse({'branches': branches_list})
+    except Department.DoesNotExist:
+        return JsonResponse({'branches': []})

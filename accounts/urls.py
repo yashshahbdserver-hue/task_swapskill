@@ -30,4 +30,7 @@ urlpatterns = [
     path('forgot-password/', views.ForgotPasswordView.as_view(), name='forgot_password'),
     path('verify-otp/', views.OTPVerificationView.as_view(), name='verify_otp'),
     path('reset-password/', views.PasswordResetView.as_view(), name='reset_password'),
+    
+    # AJAX endpoints
+    path('ajax/get-branches/', views.get_branches, name='get_branches'),
 ]

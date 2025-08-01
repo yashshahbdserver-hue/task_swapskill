@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
+from core.models import Department, Branch
 import re
 
 class UserProfile(models.Model):
@@ -15,7 +16,8 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     university_email = models.EmailField(unique=True, help_text="Use your university email address")
-    department = models.CharField(max_length=100, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
     year = models.CharField(max_length=20, choices=YEAR_CHOICES, blank=True)
     bio = models.TextField(max_length=500, blank=True, help_text="Tell others about yourself")
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
@@ -53,13 +55,18 @@ class UserProfile(models.Model):
                    '@college.' in self.university_email):
                 from django.core.exceptions import ValidationError
                 raise ValidationError('Please use a valid university email address.')
+        
+        # Validate branch belongs to department
+        if self.branch and self.department and self.branch.department != self.department:
+            from django.core.exceptions import ValidationError
+            raise ValidationError('Selected branch does not belong to the selected department.')
     
     def get_full_name(self):
         return self.user.get_full_name() or self.user.username
     
     def get_completion_percentage(self):
         """Calculate profile completion percentage"""
-        fields = ['university_email', 'department', 'year', 'bio', 'availability']
+        fields = ['university_email', 'department', 'branch', 'year', 'bio', 'availability']
         completed = sum(1 for field in fields if getattr(self, field))
         return int((completed / len(fields)) * 100)
 
